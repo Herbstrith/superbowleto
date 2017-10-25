@@ -1,11 +1,11 @@
 import { always, cond, equals, T } from 'ramda'
-import * as bradesco from './bradesco'
-import * as development from './development'
+import Bradesco from './bradesco'
+import Development from './development'
 import { NotFoundError } from '../lib/errors/index'
 
 export const findProvider = cond([
-  [equals('bradesco'), always(bradesco)],
-  [equals('development'), always(development)],
+  [equals('bradesco'), always(Bradesco)],
+  [equals('development'), always(Development)],
   [T, () => {
     throw new NotFoundError({
       message: 'Provider not found'
