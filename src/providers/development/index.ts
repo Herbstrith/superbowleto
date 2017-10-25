@@ -4,27 +4,34 @@ import { makeFromLogger } from '../../lib/logger'
 
 const makeLogger = makeFromLogger('development/index')
 
-export const register = (boleto) => {
-  const getStatusFromAmount = cond([
-    [equals(5000003), always('pending_registration')],
-    [equals(5000004), always('refused')],
-    [T, always('registered')]
-  ])
+export default function DevelopmentProvider ({ requestId }) {
+  const register = (boleto) => {
+    const getStatusFromAmount = cond([
+      [equals(5000003), always('pending_registration')],
+      [equals(5000004), always('refused')],
+      [T, always('registered')]
+    ])
 
-  const logger = makeLogger({ operation: 'register' })
+    const logger = makeLogger({ operation: 'register' }, { id: requestId })
 
-  return Promise.resolve(boleto)
-    .then(bol => ({
-      status: getStatusFromAmount(bol.amount)
-    }))
-    .tap((response) => {
-      logger.info({
-        status: 'succeeded',
-        metadata: {
-          status: response.status,
-          data: response.data
-        }
+    return Promise.resolve(boleto)
+      .then(bol => ({
+        status: getStatusFromAmount(bol.amount)
+      }))
+      .tap((response) => {
+        logger.info({
+          status: 'succeeded',
+          metadata: {
+            status: response.status,
+            data: response.data
+          }
+        })
       })
-    })
-    .tapCatch(err => logger.error({ status: 'failed', metadata: { err } }))
+      .tapCatch(err => logger.error({ status: 'failed', metadata: { err } }))
+  }
+
+  return {
+    register
+  }
 }
+

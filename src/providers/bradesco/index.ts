@@ -63,16 +63,7 @@ export const buildPayload = boleto =>
     .then(spec => applySpec(spec)(boleto))
 
 export const translateResponseCode = (response) => {
-  const logger = makeLogger({ operation: 'translateResponseCode' })
-
   const responseCode = response.data.status.codigo.toString()
-
-  logger.info({
-    status: 'succeeded',
-    metadata: {
-      response: response.data
-    }
-  })
 
   const defaultValue = {
     message: 'CÓDIGO INEXISTENTE',
@@ -82,39 +73,57 @@ export const translateResponseCode = (response) => {
   return defaultTo(defaultValue, prop(responseCode, responseCodeMap))
 }
 
-export const register = (boleto) => {
-  const logger = makeLogger({ operation: 'register' })
+export default function BradescoProvider ({ requestId }) {
+  const register = (boleto) => {
+    const logger = makeLogger({ operation: 'register' }, { id: requestId })
 
-  return Promise.all([
-    buildHeaders(),
-    buildPayload(boleto)
-  ])
-    .spread((headers, payload) => ({
-      headers,
-      data: payload,
-      url: endpoint,
-      method: 'POST'
-    }))
-    .tap((request) => {
-      logger.info({
-        status: 'started',
+    return Promise.all([
+      buildHeaders(),
+      buildPayload(boleto)
+    ])
+      .spread((headers, payload) => ({
+        headers,
+        data: payload,
+        url: endpoint,
+        method: 'POST'
+      }))
+      .tap((request) => {
+        logger.info({
+          status: 'started',
+          metadata: {
+            request: { body: request.data }
+          }
+        })
+      })
+      .then(axios.request)
+      .tap((response) => {
+        logger.info({
+          metadata: {
+            response: response.data
+          }
+        })
+      })
+      .then(translateResponseCode)
+      .tap((response) => {
+        logger.info({
+          status: 'succeeded',
+          metadata: {
+            status: response.status,
+            data: response.data
+          }
+        })
+      })
+      .tapCatch(err => logger.error({
+        status: 'failed',
         metadata: {
-          request: { body: request.data }
+          err: pathOr(err, ['response', 'data'], err)
         }
-      })
-    })
-    .then(axios.request)
-    .then(translateResponseCode)
-    .tap((response) => {
-      logger.info({
-        status: 'succeeded',
-        metadata: { status: response.status, data: response.data }
-      })
-    })
-    .tapCatch(err => logger.error({
-      status: 'failed',
-      metadata: {
-        err: pathOr(err, ['response', 'data'], err)
-      }
-    }))
+      }))
+  }
+
+  return {
+    register
+  }
 }
+
+
