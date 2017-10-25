@@ -14,7 +14,7 @@ const makeLogger = makeFromLogger('boleto/service')
 
 export default function BoletoService ({ requestId }) {
   const create = (data) => {
-    const logger = makeLogger({ operation: 'create' }, { id: defaultCuidValue('req_')() })
+    const logger = makeLogger({ operation: 'create_boleto' }, { id: requestId })
 
     logger.info({ status: 'started', metadata: { data } })
 
@@ -33,10 +33,10 @@ export default function BoletoService ({ requestId }) {
   }
 
   const register = (boleto) => {
+    const logger = makeLogger({ operation: 'register_boleto' }, { id: requestId })
+
     const provider = findProvider(boleto.issuer)
     const timeoutMilliseconds = process.env.NODE_ENV === 'production' ? 10000 : 25000
-
-    const logger = makeLogger({ operation: 'register' }, { id: defaultCuidValue('req_')() })
 
     const updateBoletoStatus = (response) => {
       const status = response.status
@@ -96,7 +96,7 @@ export default function BoletoService ({ requestId }) {
       .then(register)
 
   const update = (data) => {
-    const logger = makeLogger({ operation: 'update' }, { id: defaultCuidValue('req_')() })
+    const logger = makeLogger({ operation: 'update_boleto' }, { id: requestId })
     logger.info({ status: 'started', metadata: { data } })
 
     const id = data.id
